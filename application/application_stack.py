@@ -6,13 +6,16 @@ from aws_cdk import (
     aws_glue_alpha as glue,
     aws_iam as iam,
     aws_s3 as s3,
+    aws_logs as logs,
     aws_s3_deployment as s3_deployment,
-    Stack,RemovalPolicy,Aws,Duration,CfnOutput
+    Aspects,Stack,RemovalPolicy,Aws,Duration,CfnOutput
     
 )
 from constructs import Construct
 
 import json,os
+
+from cdk_nag import ( AwsSolutionsChecks, NagSuppressions )
 
 class ApplicationStack(Stack):
   
@@ -38,6 +41,29 @@ class ApplicationStack(Stack):
 
   def __init__(self, scope: Construct, construct_id: str, cidr_block: str,**kwargs) -> None:
     super().__init__(scope, construct_id, **kwargs)
+
+    ############################################
+    ##
+    ## CDK Nag - https://pypi.org/project/cdk-nag/
+    ##           https://github.com/cdklabs/cdk-nag
+    ##
+    ## CDK Nag Checks for AWS Engagement Solutions Secuirty Rules:
+    ##   https://github.com/cdklabs/cdk-nag/blob/main/RULES.md#awssolutions
+    ## Also checks for:
+    ##   HIPAA Security
+    ##   NIST 800-53 rev 4
+    ##   NIST 800-53 rev 5
+    ##
+    ############################################
+    Aspects.of(self).add(AwsSolutionsChecks())
+    ##
+    ## Supressed Errors
+    ##
+    NagSuppressions.add_stack_suppressions(self, [{"id":"AwsSolutions-S1",   "reason":"TODO: Set *server_access_logs_bucket* and *server_access_logs_prefix* to enable server access logging."}])
+    NagSuppressions.add_stack_suppressions(self, [{"id":"AwsSolutions-IAM4", "reason":"TODO: Stop using AWS managed policies."}])
+    NagSuppressions.add_stack_suppressions(self, [{"id":"AwsSolutions-IAM5", "reason":"TODO: Remove Wildcards in IAM roles."}])
+    NagSuppressions.add_stack_suppressions(self, [{"id":"AwsSolutions-SF2", "reason":"TODO: Set the X-Ray Tracing on the Step Function."}])
+    NagSuppressions.add_stack_suppressions(self, [{"id":"AwsSolutions-SF1", "reason":"TODO: Set the Step Function CloudWatch Logs log events to 'ALL' "}])
 
     ## Variable Initialization
     cdk_account_id:str = os.environ["CDK_DEFAULT_ACCOUNT"] 
@@ -78,6 +104,17 @@ class ApplicationStack(Stack):
         parameter_name = '/enterprise-repo/private-subnet-'+str(count)
         )
       count += 1 
+
+    log_group = logs.LogGroup(self, "enterprise-repo-log-group")
+
+    role = iam.Role(self, "enterprise-repo-vpc-flow-log-role",
+        assumed_by=iam.ServicePrincipal("vpc-flow-logs.amazonaws.com")
+    )
+
+    ec2.FlowLog(self, "enterprise-repo-vpc-flow-log",
+        resource_type=ec2.FlowLogResourceType.from_vpc(self.vpc),
+        destination=ec2.FlowLogDestination.to_cloud_watch_logs(log_group, role)
+    )
 
     ########################################
     ##
