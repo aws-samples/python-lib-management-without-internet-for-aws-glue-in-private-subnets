@@ -1,6 +1,6 @@
-## My Project
+## Simplify and Optimize Python Package Management for AWS Glue PySpark jobs with AWS CodeArtifact
 
-TODO: Fill this README out!
+The artifacts in this repository support the published blog: Simplify and Optimize Python Package Management for AWS Glue PySpark jobs with AWS CodeArtifact. Refer to the blog for detailed instructions on setup and configuration.
 
 Be sure to:
 
