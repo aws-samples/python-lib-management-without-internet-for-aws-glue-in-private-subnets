@@ -1,0 +1,55 @@
+{
+  "Comment": "A description of my state machine",
+  "StartAt": "CodeArtifactGetAuthorizationToken",
+  "States": {
+    "CodeArtifactGetAuthorizationToken": {
+      "Type": "Task",
+      "Parameters": {
+        "Domain": "${domain}",
+        "DomainOwner": "${aws_account_id}",
+        "DurationSeconds": 900
+      },
+      "Resource": "arn:aws:states:::aws-sdk:codeartifact:getAuthorizationToken",
+      "Next": "GenerateCodeArtifactURL",
+      "ResultPath": "$.taskresult"
+    },
+    "GenerateCodeArtifactURL": {
+      "Type": "Pass",
+      "Parameters": {
+        "codeartifacturl.$": "States.Format('--index-url=https:://aws:{}/octank', $.taskresult.AuthorizationToken)"
+      },
+      "Next": "Glue StartJobRun",
+      "ResultPath": "$.taskresult",
+      "Comment": "Generates the URL of Code Artifact for the token"
+    },
+    "Glue StartJobRun": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Parameters": {
+        "JobName": "${jobname}",
+        "Arguments": {
+          "--additional-python-modules.$": "$.pythonmodules",
+          "--python-modules-installer-option.$": "$.taskresult.codeartifacturl"
+        }
+      },
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Next": "Glue Job Failed"
+        }
+      ],
+      "Next": "Glue Job Successful"
+    },
+    "Glue Job Successful": {
+      "Type": "Succeed",
+      "Comment": "Glue Job Completed Successfully"
+    },
+    "Glue Job Failed": {
+      "Type": "Fail",
+      "Error": "GLue Job Failed",
+      "Comment": "Glue Job Failed"
+    }
+  }
+}
