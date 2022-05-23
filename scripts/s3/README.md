@@ -9,7 +9,7 @@ Open the terminal/bash/shell
 
 Browse to the current directory
 ```
-$ cd <repo>/code/application/scripts/s3
+$ cd <repo>/scripts/s3
 ``` 
 Download the File from S3 bucket to current location:
 ```
