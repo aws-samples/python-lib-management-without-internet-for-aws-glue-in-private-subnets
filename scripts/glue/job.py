@@ -19,7 +19,7 @@ job.init(args['JOB_NAME'], args)
 
 ##Verify Versions of Imported Libraries
 print("Boto3 Version    :   ",boto3.__version__)
-print("GLue Utils Version :   " ,glueutils.__version__)
+print("Glue Utils Version :   " ,glueutils.__version__)
 
 s3_input_path = 's3://' + args['S3_BUCKET'] + '/data/'
 s3_output_path = 's3://' + args['S3_BUCKET'] + '/dataoutput/'
